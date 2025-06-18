@@ -1,0 +1,38 @@
+﻿services:
+  taskhandler-api:
+    image: taskhandler-api
+    build:
+      context: .
+      dockerfile: TaskHandler.Api/Dockerfile
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+    depends_on:
+      - taskhandler-db
+    networks:
+      - taskhandler-network
+
+  taskhandler-db:
+    image: postgres:15
+    container_name: taskhandler-postgres
+    environment:
+      POSTGRES_DB: taskhandler
+      POSTGRES_USER: taskhandler_user
+      POSTGRES_PASSWORD: taskhandler_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - taskhandler-network
+
+volumes:
+  postgres_data:
+
+networks:
+  taskhandler-network:
+    driver: bridge
