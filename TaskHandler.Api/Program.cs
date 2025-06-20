@@ -4,7 +4,9 @@ using Serilog;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using TaskHandler.Api.Endpoints;
+using TaskHandler.Api.Endpoints.Emails;
 using TaskHandler.Api.Endpoints.Tasks;
+using TaskHandler.Api.Endpoints.Users;
 using TaskHandler.Api.Exceptions.Handlers;
 using TaskHandler.Application;
 using TaskHandler.Application.Behaviors;
@@ -39,6 +41,8 @@ builder.Services.AddMediatR(config =>
     config.RegisterServicesFromAssembly(typeof(Program).Assembly);
     config.AddOpenBehavior(typeof(ValidationBehavior<,>));
 });
+
+builder.Services.AddDataProtection();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddValidatorsFromAssemblyContaining<TaskHandler.Application.Commands.AddTaskItem.AddTaskItemCommand>();
@@ -107,7 +111,9 @@ app.MapTaskEndpoints();
 app.MapPostTaskEndpoints();
 app.MapUpdateTaskItemEndpoint();
 app.MapDeleteTaskItemEndpoints();
+app.SetupEmailEndPoint();
 app.MapHealthChecks("/health");
+app.MapUserEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

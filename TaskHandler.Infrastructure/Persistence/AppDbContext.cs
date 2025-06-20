@@ -61,6 +61,16 @@ public class AppDbContext : DbContext, IApplicationDbContext
                 .HasConversion(
                     password => password!.Hash,
                     hash => Password.FromHash(hash));
+
+            entity.OwnsMany(u => u.PasswordResetTokens, rt =>
+            {
+                rt.ToTable("password_reset_tokens");
+                rt.WithOwner().HasForeignKey("UserId");
+                rt.HasKey("UserId", "TokenHash");
+    
+                rt.Property(t => t.TokenHash).HasColumnName("token_hash").IsRequired();
+                rt.Property(t => t.ExpirationDate).HasColumnName("expiration_date").IsRequired();
+            });
         });
     }
 }

@@ -52,27 +52,24 @@ public class DataSeeder : IDataSeeder
     {
         try
         {
-            if (await _dbContext.Users.AnyAsync())
+            if (!await _dbContext.Users.AnyAsync())
             {
-                _logger.LogInformation("Found users, cleaning");
-                _dbContext.Users.RemoveRange(_dbContext.Users);
-                await _dbContext.SaveChangesAsync();
+                var users = new List<User>();
+
+                var user1 = User.Create(Email.Create("paul@taskhandler.com"), Password.Create("123abcpppppppppp"),
+                    "Paul");
+                var user2 = User.Create(Email.Create("pierre@taskhandler.com"), Password.Create("password2223"),
+                    "Pierre");
+                var user3 = User.Create(Email.Create("nicolas@taskhandler.com"), Password.Create("password344"),
+                    "Nicolas");
+
+                users.Add(user1);
+                users.Add(user2);
+                users.Add(user3);
+
+                await _dbContext.Users.AddRangeAsync(users);
+                _logger.LogInformation("Seeded {Count} users", users.Count);
             }
-
-            var users = new List<User>();
-
-            var user1 = User.Create(Email.Create("paul@taskhandler.com"), Password.Create("123abcpppppppppp"),
-                "Paul");
-            var user2 = User.Create(Email.Create("pierre@taskhandler.com"), Password.Create("password2223"), "Pierre");
-            var user3 = User.Create(Email.Create("nicolas@taskhandler.com"), Password.Create("password344"),
-                "Nicolas");
-
-            users.Add(user1);
-            users.Add(user2);
-            users.Add(user3);
-
-            await _dbContext.Users.AddRangeAsync(users);
-            _logger.LogInformation("Seeded {Count} users", users.Count);
         }
         catch (Exception ex)
         {

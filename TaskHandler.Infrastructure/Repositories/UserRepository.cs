@@ -14,9 +14,9 @@ public class UserRepository : IUserRepository
         _context = context;
     }
     
-    public async Task<User?> GetById(Guid id)
+    public async Task<User?> GetById(Guid id, CancellationToken cancellationToken = default)
     {
-        var user = await _context.Users.FindAsync(id).AsTask();
+        var user = await _context.Users.FindAsync(id, cancellationToken).AsTask();
         return user;
     }
 
@@ -57,14 +57,45 @@ public class UserRepository : IUserRepository
 
         if (userDb.Name != user.Name)
         {
-            userDb.UpdateName(user.Name);
+            if (user.Name != null)
+            {
+                userDb.UpdateName(user.Name);
+            }
         }
         
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<bool> TryAddUser(User user, CancellationToken cancellationToken = default)
+    public async Task<bool> TryAddUser(User user, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (user.Email == null)
+        {
+            throw new Exception("User email is required");
+        }
+        
+        var existingUser = await GetUserByEmail(user.Email.Value, cancellationToken);
+        
+        if (existingUser != null)
+        {
+            return false;
+        }
+        
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<User?> GetUserByEmail(string email, CancellationToken cancellationToken = default)
+    {
+        var users = await _context.Users
+            .Where(u => u.Email != null)
+            .ToListAsync(cancellationToken);
+        
+        return users.FirstOrDefault(u => u.Email != null && u.Email.Value == email);
+    }
+
+    public async Task Save(CancellationToken cancellationToken = default)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

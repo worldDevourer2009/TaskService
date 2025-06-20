@@ -10,9 +10,13 @@ public class User : Entity
     public DateTime? LastLogin { get; private set; }
     public bool IsActive { get; private set; }
     public string? Name { get; private set; }
+    public IReadOnlyCollection<PasswordResetToken> PasswordResetTokens => _passwordResetTokens;
+    
+    private readonly List<PasswordResetToken> _passwordResetTokens;
 
     private User()
     {
+        _passwordResetTokens = new List<PasswordResetToken>();
     }
 
     public static User Create(Email email, Password password, string name)
@@ -28,6 +32,21 @@ public class User : Entity
             IsActive = true
         };
     }
+
+    public void AddResetToken(PasswordResetToken passwordResetToken)
+    {
+        _passwordResetTokens.Add(passwordResetToken);
+    }
+
+    public void RemoveResetToken(PasswordResetToken passwordResetToken)
+    {
+        _passwordResetTokens.Remove(passwordResetToken);
+    }
+
+    public PasswordResetToken? GetValidResetToken()
+    {
+        return _passwordResetTokens.FirstOrDefault(x => !x.IsExpired(x.TokenHash));   
+    }
     
     public void UpdateEmail(Email email)
     {
@@ -37,6 +56,7 @@ public class User : Entity
     public void UpdatePassword(string newPassword)
     {
         Password = Password.Create(newPassword);
+        _passwordResetTokens.Clear();
     }
     
     public void UpdateName(string name)

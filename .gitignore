@@ -29,6 +29,7 @@ packages/
 
 # ASP.NET/razor
 appsettings*.json
+
 secrets.json
 .env
 

@@ -16,6 +16,40 @@ public static class DependencyInjection
         services.AddScoped<IUserPasswordService, UserPasswordService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<IUserLoginService, UserLoginService>();
+        services.AddScoped<IUserSignUpService, UserSignUpService>();
+        
+        var smtpServer = configuration["EmailSettings:SmtpServer"];
+        var smtpPortStr = configuration["EmailSettings:SmtpPort"];
+        var smtpUser = configuration["EmailSettings:SmtpUsername"];
+        var smtpPassword = configuration["EmailSettings:SmtpPassword"];
+        var enableSslStr = configuration["EmailSettings:EnableSsl"];
+        var smtpFrom = configuration["EmailSettings:FromEmail"];
+        var smtpFromDisplayName = configuration["EmailSettings:FromName"];
+        
+        int smtpPort = 587;
+        bool enableSsl = true;
+        
+        if (!string.IsNullOrEmpty(smtpPortStr) && int.TryParse(smtpPortStr, out int parsedPort))
+        {
+            smtpPort = parsedPort;
+        }
+    
+        if (!string.IsNullOrEmpty(enableSslStr) && bool.TryParse(enableSslStr, out bool parsedSsl))
+        {
+            enableSsl = parsedSsl;
+        }
+    
+        services.AddSingleton<IEmailSender>(sp => new SmtpEmailSender(
+            smtpServer: smtpServer,
+            smtpPort: smtpPort,
+            smtpUser: smtpUser,
+            smtpPassword: smtpPassword,
+            smtpEnableSsl: enableSsl,
+            smtpFrom: smtpFrom,
+            smtpFromDisplayName: smtpFromDisplayName
+        ));
+
         return services;
     }
 }
