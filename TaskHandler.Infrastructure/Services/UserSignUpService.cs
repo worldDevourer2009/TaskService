@@ -1,3 +1,5 @@
+using TaskHandler.Application.Interfaces;
+using TaskHandler.Domain.DomainsEvents.Users;
 using TaskHandler.Domain.Entities;
 using TaskHandler.Domain.Repositories;
 using TaskHandler.Domain.Services;
@@ -8,10 +10,12 @@ namespace TaskHandler.Infrastructure.Services;
 public class UserSignUpService : IUserSignUpService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IDomainDispatcher _dispatcher;
     
-    public UserSignUpService(IUserRepository userRepository)
+    public UserSignUpService(IUserRepository userRepository, IDomainDispatcher dispatcher)
     {
         _userRepository = userRepository;
+        _dispatcher = dispatcher;
     }
     
     public async Task<bool> SignUpAsync(string name, string email, string password, CancellationToken cancellationToken = default)
@@ -31,7 +35,9 @@ public class UserSignUpService : IUserSignUpService
         {
             throw new Exception("Can't add user, try again later");
         }
-        
+        newUser.AddDomainEvent(new UserCreatedDomainEvent());
+        await _dispatcher.DispatchAsync(newUser.DomainEvents, cancellationToken);
+        newUser.ClearDomainEvents();
         return true;
     }
 }

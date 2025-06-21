@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskHandler.Application.Interfaces;
+using TaskHandler.Domain.DomainsEvents.Users;
 using TaskHandler.Domain.Entities;
 using TaskHandler.Domain.Repositories;
 

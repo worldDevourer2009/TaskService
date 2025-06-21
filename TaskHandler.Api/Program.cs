@@ -10,6 +10,9 @@ using TaskHandler.Api.Endpoints.Users;
 using TaskHandler.Api.Exceptions.Handlers;
 using TaskHandler.Application;
 using TaskHandler.Application.Behaviors;
+using TaskHandler.Application.Events.Users;
+using TaskHandler.Application.Services;
+using TaskHandler.Domain.DomainsEvents.Users;
 using TaskHandler.Infrastructure;
 using TaskHandler.Infrastructure.Persistence;
 
@@ -35,6 +38,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IApplicationDbContext>(provider => 
     provider.GetRequiredService<AppDbContext>());
+
+builder.Services.AddScoped<IDomainDispatcher, DomainDispatcher>();
+
+builder.Services.AddScoped<IDomainEventHandler<UserCreatedDomainEvent>, NewUserCreatedEventHandler>();
 
 builder.Services.AddMediatR(config =>
 {
