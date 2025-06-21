@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskHandler.Application.Interfaces;
-using TaskHandler.Domain;
 using TaskHandler.Domain.Entities;
 using TaskHandler.Domain.ValueObjects;
 
@@ -8,9 +7,10 @@ namespace TaskHandler.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext, IApplicationDbContext
 {
-    public DbSet<TaskItem> TaskItems { get; set; } = null!;
-    public DbSet<User> Users { get; set; } = null!;
-    
+    public DbSet<TaskItem> TaskItems { get; private set; } = null!;
+    public DbSet<User> Users { get; private set; } = null!;
+    public DbSet<RevokedToken> RevokedTokens { get; private set; } = null!;
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
@@ -71,6 +71,21 @@ public class AppDbContext : DbContext, IApplicationDbContext
                 rt.Property(t => t.TokenHash).HasColumnName("token_hash").IsRequired();
                 rt.Property(t => t.ExpirationDate).HasColumnName("expiration_date").IsRequired();
             });
+        });
+
+        modelBuilder.Entity<RevokedToken>(entity =>
+        {
+            entity.ToTable("revoked_tokens");
+
+            entity.HasKey(e => e.TokenId);
+            entity.Property(e => e.TokenId).HasColumnName("token_id");
+            entity.Property(e => e.Token).HasColumnName("token").IsRequired();
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at");
+            entity.Property(e => e.ExpirationDate).HasColumnName("expiration_date");
+
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.UserId);
         });
     }
 }

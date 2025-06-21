@@ -8,5 +8,6 @@ public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
     DbSet<TaskItem> TaskItems { get; }
+    DbSet<RevokedToken> RevokedTokens { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

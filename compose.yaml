@@ -29,9 +29,21 @@
     restart: unless-stopped
     networks:
       - taskhandler-network
+    
+  taskhandler-redis:
+    image: redis:7-alpine
+    container_name: taskhandler-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - taskhandler-network
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   taskhandler-network:
