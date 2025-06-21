@@ -4,7 +4,7 @@ namespace TaskHandler.Domain.ValueObjects;
 
 public class PasswordResetToken : ValueObject
 {
-    public string TokenHash { get; private init; }
+    public string? TokenHash { get; private init; }
     public DateTime ExpirationDate { get; private init;}
     
     private PasswordResetToken()
@@ -25,7 +25,11 @@ public class PasswordResetToken : ValueObject
     
     public override IEnumerable<object> GetEqualityComponents()
     {
-        yield return TokenHash;
+        if (TokenHash != null)
+        {
+            yield return TokenHash;
+        }
+        
         yield return ExpirationDate;
     }
 }

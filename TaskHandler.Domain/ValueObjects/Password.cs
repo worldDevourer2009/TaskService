@@ -48,7 +48,7 @@ public class Password : ValueObject
         }
         return new Password(hash);
     }
-    
+
     public override IEnumerable<object> GetEqualityComponents()
     {
         yield return Hash;

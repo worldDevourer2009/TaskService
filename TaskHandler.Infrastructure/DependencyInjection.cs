@@ -21,7 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IUserLoginService, UserLoginService>();
         services.AddScoped<IUserSignUpService, UserSignUpService>();
         services.AddScoped<ITokenService, TokenService>();
-
+        services.AddScoped<IRevokedRefreshTokenRepository, RevokedRefreshTokenRepository>();
 
         BindRedis(services, configuration);
         BindEmailService(services, configuration);

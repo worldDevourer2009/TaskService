@@ -23,7 +23,7 @@ public class Email : ValueObject
         
         return new Email(emailAddress);
     }
-    
+
     public override IEnumerable<object> GetEqualityComponents()
     {
         yield return Value.ToLowerInvariant();

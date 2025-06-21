@@ -45,7 +45,7 @@ public class User : Entity
 
     public PasswordResetToken? GetValidResetToken()
     {
-        return _passwordResetTokens.FirstOrDefault(x => !x.IsExpired(x.TokenHash));   
+        return _passwordResetTokens.FirstOrDefault(x => x.TokenHash != null && !x.IsExpired(x.TokenHash));   
     }
     
     public void UpdateEmail(Email email)
