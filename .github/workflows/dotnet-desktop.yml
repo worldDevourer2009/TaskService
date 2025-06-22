@@ -1,12 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow will build and test a .NET application.
-# You can uncomment and adjust the WAP/UWP packaging steps if needed.
-
-name: .NET Core Desktop
+name: .NET Web API CI/CD
 
 on:
   push:
@@ -17,7 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -32,21 +24,41 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-    
+
     strategy:
       matrix:
-        dotnet-version: [ '7.0.x' ]
-    
+        dotnet-version: [ '9.0.x' ]
+
+    env:
+      ConnectionStrings__DefaultConnection: >-
+        Host=localhost;
+        Port=5432;
+        Database=taskhandler;
+        Username=taskhandler_user;
+        Password=taskhandler_password;
+      JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
+      JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
+      JwtSettings__Key: ${{ secrets.JWT_KEY }}
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Restore dependencies
         run: dotnet restore
@@ -54,32 +66,22 @@ jobs:
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
-      - name: Wait for Postgres service
+      - name: Wait for Postgres
         run: |
           echo "Waiting for PostgreSQL to be ready..."
-          while ! pg_isready -h localhost -p 5432 -U taskhandler_user; do
+          until pg_isready -h localhost -p 5432 -U taskhandler_user; do
             sleep 2
           done
 
       - name: Run tests
-        env:
-          ConnectionStrings__DefaultConnection: >-
-            Host=localhost;
-            Port=5432;
-            Database=taskhandler;
-            Username=taskhandler_user;
-            Password=taskhandler_password;
-          JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
-          JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
-          JwtSettings__Key: ${{ secrets.JWT_KEY }}
         run: |
           dotnet test --no-build --configuration Release \
             --logger "trx;LogFileName=test_results.trx" \
-            --results-directory ./TestResults
+            --results-directory TestResults
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: test-results
-          path: ./TestResults
- 
+          path: TestResults/*.trx
