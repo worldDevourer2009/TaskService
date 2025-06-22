@@ -47,9 +47,16 @@ jobs:
         Username=taskhandler_user;
         Password=taskhandler_password;
       ConnectionStrings__Redis: localhost:6379
-      JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
-      JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
-      JwtSettings__Key: ${{ secrets.JWT_KEY }}
+      # JWT настройки для тестового окружения
+      JwtSettings__Issuer: test-issuer
+      JwtSettings__Audience: test-audience
+      JwtSettings__Key: MIHcAgEBBEIB7Ciph8O5ZeuVT46lzj7cRyPxZaiGxh1pvqnHIwNC/gXd6fDFmTOos8NQ+PSCQglLRpZv6rMp3j5FUsBcocT1OZmgBwYFK4EEACOhgYkDgYYABAFsumQXjiC/meBVIjpI2aRUH1v2YjOdVOzyrZKiqCNHfG7H9RMraMW6OO78EZAfMgSvr5TWieLYX3L0wyh2117osQGBEzePMBDxBnNBxZqg6AtPiXNyfRe0/vuukjdMSfgoQ37sMf9YOgNT7YRxpQUrrC90tv98eU5BTdaq7qhPNvY4tg==
+      JwtSettings__AccessTokenLifetimeMinutes: 60
+      JwtSettings__RefreshTokenLifetimeDays: 7
+      # Переменные окружения для продакшена (используют secrets)
+      JwtSettings__Issuer_Prod: ${{ secrets.JWT_ISSUER }}
+      JwtSettings__Audience_Prod: ${{ secrets.JWT_AUDIENCE }}
+      JwtSettings__Key_Prod: ${{ secrets.JWT_KEY }}
 
     steps:
       - name: Checkout repository
@@ -62,6 +69,8 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -72,10 +81,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --verbosity normal
 
-      - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+      - name: Build solution with specific configuration
+        run: |
+          dotnet build --no-restore --configuration Release --verbosity normal
+          # Исправляем проблему с конфигурацией проекта
+          dotnet build TaskHandler.Application/TaskHandler.Application.csproj --configuration Release --no-restore
 
       - name: Wait for Postgres and Redis
         run: |
@@ -86,16 +98,24 @@ jobs:
           echo "PostgreSQL is ready!"
           
           echo "Waiting for Redis to be ready..."
-          until redis-cli -h localhost -p 6379 ping; do
+          until redis-cli -h localhost -p 6379 ping | grep -q PONG; do
             sleep 2
           done
           echo "Redis is ready!"
 
-      - name: Run tests
+      - name: List test projects
         run: |
+          echo "Available test projects:"
+          find . -name "*.Tests.csproj" -type f
+          
+      - name: Run tests with environment variables
+        run: |
+          export ASPNETCORE_ENVIRONMENT=Test
           dotnet test --no-build --configuration Release \
             --logger "trx;LogFileName=test_results.trx" \
-            --results-directory TestResults
+            --results-directory TestResults \
+            --verbosity normal \
+            -- RunConfiguration.EnvironmentVariables.ASPNETCORE_ENVIRONMENT=Test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -103,3 +123,12 @@ jobs:
         with:
           name: test-results
           path: TestResults/*.trx
+
+      - name: Upload build logs on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-logs
+          path: |
+            **/*.log
+            **/bin/**/*.log
