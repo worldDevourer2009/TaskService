@@ -24,10 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Tasks\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\TaskHandler.Api\TaskHandler.Api.csproj" />
       <ProjectReference Include="..\TaskHandler.Application\TaskHandler.Application.csproj" />
       <ProjectReference Include="..\TaskHandler.Infrastructure\TaskHandler.Infrastructure.csproj" />
