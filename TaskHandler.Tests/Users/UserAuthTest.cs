@@ -6,20 +6,20 @@ using TaskHandler.Domain.Repositories;
 using TaskHandler.Domain.Services;
 using TaskHandler.Domain.ValueObjects;
 using TaskHandler.Infrastructure.Services;
+using Xunit;
 
 namespace TaskHandler.Tests.Users;
 
 public class UserAuthTest
 {
-    private Mock<IUserRepository> _userRepositoryMock;
-    private Mock<IRedisService> _redisServiceMock;
-    private Mock<IRevokedRefreshTokenRepository> _revokedRefreshTokenRepositoryMock;
-    private Mock<IConfiguration> _configurationMock;
-    private Mock<ILogger<TokenService>> _loggerMock;
-    private TokenService _tokenService;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IRedisService> _redisServiceMock;
+    private readonly Mock<IRevokedRefreshTokenRepository> _revokedRefreshTokenRepositoryMock;
+    private readonly Mock<IConfiguration> _configurationMock;
+    private readonly Mock<ILogger<TokenService>> _loggerMock;
+    private readonly TokenService _tokenService;
 
-    [SetUp]
-    public void Setup()
+    public UserAuthTest()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
         _redisServiceMock = new Mock<IRedisService>();
@@ -37,9 +37,10 @@ public class UserAuthTest
             _revokedRefreshTokenRepositoryMock.Object, _configurationMock.Object, _loggerMock.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task GenerateTokenPair_ValidUser_ReturnsValidTokenPair()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var testUser = User.Create(
             Email.Create("helloWorld@test.com"), 
@@ -55,16 +56,15 @@ public class UserAuthTest
         _redisServiceMock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), null))
             .ReturnsAsync(true);
 
+        // Act
         var (accessToken, refreshToken, rawRefreshToken) = await _tokenService.GenerateTokenPair(userId);
         
-        Assert.Multiple(() =>
-        {
-            Assert.That(accessToken, Is.Not.Null);
-            Assert.That(accessToken.TokenHash, Is.Not.Null);
-            Assert.That(refreshToken, Is.Not.Null);
-            Assert.That(refreshToken.TokenHash, Is.Not.Null);
-            Assert.That(rawRefreshToken, Is.Not.Null);
-        });
+        // Assert
+        Assert.NotNull(accessToken);
+        Assert.NotNull(accessToken.TokenHash);
+        Assert.NotNull(refreshToken);
+        Assert.NotNull(refreshToken.TokenHash);
+        Assert.NotNull(rawRefreshToken);
         
         _redisServiceMock.Verify(x => x.SetAsync(
             It.Is<string>(key => key.StartsWith("refresh:")),
@@ -73,9 +73,10 @@ public class UserAuthTest
         ), Times.Once);
     } 
     
-    [Test]
+    [Fact]
     public async Task ValidateToken_ValidToken_ReturnsTrue()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         
         var testUser = User.Create(
@@ -88,21 +89,22 @@ public class UserAuthTest
         _userRepositoryMock.Setup(x => x.GetById(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(testUser);
         
+        // Act
         var accessToken = await _tokenService.GenerateAccessToken(userId);
         
-        Assert.That(accessToken, Is.Not.Null);
-        
-        Assert.That(accessToken.TokenHash, Is.Not.Null);
+        Assert.NotNull(accessToken);
+        Assert.NotNull(accessToken.TokenHash);
         
         var isValid = await _tokenService.ValidateToken(accessToken.TokenHash);
 
         // Assert
-        Assert.That(isValid, Is.True);
+        Assert.True(isValid);
     }
     
-    [Test]
+    [Fact]
     public async Task IsRefreshTokenValid_ValidToken_ReturnsTrue()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         
         var testUser = User.Create(
@@ -126,6 +128,6 @@ public class UserAuthTest
         var isValid = await _tokenService.IsRefreshTokenValid(rawRefreshToken);
 
         // Assert
-        Assert.That(isValid, Is.True);
+        Assert.True(isValid);
     }
 }

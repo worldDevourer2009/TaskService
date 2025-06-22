@@ -199,17 +199,6 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-app.Lifetime.ApplicationStarted.Register(() =>
-{
-    var ds = app.Services.GetRequiredService<EndpointDataSource>();
-    app.Logger.LogInformation("=== Registered endpoints ===");
-    foreach (var e in ds.Endpoints)
-    {
-        app.Logger.LogInformation($"  • {e.DisplayName}");
-    }
-    app.Logger.LogInformation("============================");
-});
-
 app.Logger.LogInformation("TaskHandler API starting up...");
 
 app.Run();
