@@ -1,0 +1,85 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# This workflow will build and test a .NET application.
+# You can uncomment and adjust the WAP/UWP packaging steps if needed.
+
+name: .NET Core Desktop
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    runs-on: windows-latest
+
+    env:
+      Solution_Name: TaskHandler.sln                         # Replace with your solution name.
+      Test_Project_Path: TaskHandler/TaskHandler.Tests/TaskHandler.Tests.csproj
+      #Wap_Project_Directory: your-wap-project-directory-name
+      #Wap_Project_Path: your-wap-project-path
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Install .NET 9 SDK
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      # (Optional) Setup MSBuild for UWP packaging
+      # - name: Setup MSBuild.exe
+      #   uses: microsoft/setup-msbuild@v2
+
+      # Restore dependencies
+      - name: Restore the solution
+        run: dotnet restore ${{ env.Solution_Name }}
+
+      # Build the solution
+      - name: Build solution
+        run: dotnet build ${{ env.Solution_Name }} --configuration ${{ matrix.configuration }} --no-restore
+
+      # Execute all unit tests
+      - name: Execute unit tests
+        run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }} --no-build
+
+      # (Optional) Decode the base64 .pfx for UWP packaging
+      # - name: Decode the pfx
+      #   run: |
+      #     $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
+      #     $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
+      #     [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
+
+      # (Optional) Create the app package (UWP/MSIX)
+      # - name: Create the app package
+      #   run: msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
+      #   env:
+      #     Appx_Bundle: Always
+      #     Appx_Bundle_Platforms: x86|x64
+      #     Appx_Package_Build_Mode: StoreUpload
+      #     Configuration: ${{ matrix.configuration }}
+
+      # (Optional) Remove the .pfx after packaging
+      # - name: Remove the pfx
+      #   run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
+
+      # (Optional) Upload the MSIX package
+      # - name: Upload build artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: MSIX Package
+      #     path: ${{ env.Wap_Project_Directory }}\AppPackages
