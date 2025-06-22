@@ -15,40 +15,71 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: taskhandler
+          POSTGRES_USER: taskhandler_user
+          POSTGRES_PASSWORD: taskhandler_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready --username=taskhandler_user --dbname=taskhandler"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
     strategy:
       matrix:
-        configuration: [Debug, Release]
-
-    runs-on: windows-latest
-
-    env:
-      Solution_Name: TaskHandler.sln
-      Test_Project_Path: TaskHandler.Tests/TaskHandler.Tests.csproj
-      #Wap_Project_Directory: your-wap-project-directory-name
-      #Wap_Project_Path: your-wap-project-path
-
+        dotnet-version: [ '7.0.x' ]
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # Install .NET 9 SDK
-      - name: Install .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: ${{ matrix.dotnet-version }}
 
-      # Restore dependencies
-      - name: Restore the solution
-        run: dotnet restore ${{ env.Solution_Name }}
+      - name: Restore dependencies
+        run: dotnet restore
 
-      # Build the solution
       - name: Build solution
-        run: dotnet build ${{ env.Solution_Name }} --configuration ${{ matrix.configuration }} --no-restore
+        run: dotnet build --no-restore --configuration Release
 
-      # Execute all unit tests
-      - name: Execute unit tests
-        run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }} --no-build
+      - name: Wait for Postgres service
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          while ! pg_isready -h localhost -p 5432 -U taskhandler_user; do
+            sleep 2
+          done
+
+      - name: Run tests
+        env:
+          ConnectionStrings__DefaultConnection: >-
+            Host=localhost;
+            Port=5432;
+            Database=taskhandler;
+            Username=taskhandler_user;
+            Password=taskhandler_password;
+          JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
+          JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
+          JwtSettings__Key: ${{ secrets.JWT_KEY }}
+        run: |
+          dotnet test --no-build --configuration Release \
+            --logger "trx;LogFileName=test_results.trx" \
+            --results-directory ./TestResults
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ./TestResults
+ 
