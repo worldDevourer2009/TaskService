@@ -27,7 +27,7 @@ public class UserAuthTest
         _configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<TokenService>>();
         
-        _configurationMock.Setup(x => x["JwtSettings:Key"]).Returns("MIHcAgEBBEIArHzR+NXhsA3b4HnodLD3IfScKCFl5NI04oNRInWV0pvgeO1f8nyFNDuqvtPOsMtC1vSi1bSAUqZMrCa8IrpauJ+gBwYFK4EEACOhgYkDgYYABAB/Iu9j8w4AOklu7oNJAArH8MaEVwKDCdM0oTXiUL6TVLx6cWxVjwXP0/N+EMvBzd5BlzsUl1aGSyCUiBlDYTEeqgAbEMrebDOtBTHWHHPImjz/+4Y88sEzPTAD+pYP04Yy9VVxpqb03REsqcUkiwpxaAEQNWh688TkuSJQRSVkRIzxlg==");
+        _configurationMock.Setup(x => x["JwtSettings:Key"]).Returns("MIHcAgEBBEIB7Ciph8O5ZeuVT46lzj7cRyPxZaiGxh1pvqnHIwNC/gXd6fDFmTOo\ns8NQ+PSCQglLRpZv6rMp3j5FUsBcocT1OZmgBwYFK4EEACOhgYkDgYYABAFsumQX\njiC/meBVIjpI2aRUH1v2YjOdVOzyrZKiqCNHfG7H9RMraMW6OO78EZAfMgSvr5TW\nieLYX3L0wyh2117osQGBEzePMBDxBnNBxZqg6AtPiXNyfRe0/vuukjdMSfgoQ37s\nMf9YOgNT7YRxpQUrrC90tv98eU5BTdaq7qhPNvY4tg==");
         _configurationMock.Setup(x => x["JwtSettings:Issuer"]).Returns("test_issuer");
         _configurationMock.Setup(x => x["JwtSettings:Audience"]).Returns("test_audience");
         _configurationMock.Setup(x => x["JwtSettings:AccessTokenLifetimeMinutes"]).Returns("60");
