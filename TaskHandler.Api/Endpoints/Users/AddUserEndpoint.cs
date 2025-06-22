@@ -1,4 +1,5 @@
 using TaskHandler.Application.Commands.Users;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TaskHandler.Api.Endpoints.Users;
 
@@ -23,7 +24,7 @@ public static class AddUserEndpoint
 
     private static void MapUserPostEndpoint(this IEndpointRouteBuilder endpoints, RouteGroupBuilder group)
     {
-        group.MapPost("", async (SignUpUserRequest request, ISender mediator) =>
+        group.MapPost("auth/signUp", async ([FromBody] SignUpUserRequest request, [FromServices] ISender mediator) =>
         {
             var command = new SignUpUserCommand(request.Name, request.Email, request.Password);
             var result = await mediator.Send(command);
@@ -32,7 +33,7 @@ public static class AddUserEndpoint
                 : Results.BadRequest(new SignUpUserResponse(result.success, result.message));
         });
 
-        group.MapPost("auth/login", async (LoginRequest request, ISender mediator) =>
+        group.MapPost("auth/login", async ([FromBody] LoginRequest request, [FromServices] ISender mediator) =>
         {
             var command = new LoginUserCommand(request.Email, request.Password);
             var result = await mediator.Send(command);

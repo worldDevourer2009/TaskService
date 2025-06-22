@@ -6,11 +6,11 @@ namespace TaskHandler.Application.Commands.AddTaskItem;
 public record AddTaskItemCommand(
     Guid userId,
     string title,
-    string description) : ICommand<AddTaskItemCommandResult>;
+    string description) : ICommand<AddTaskItemResponse>;
 
-public record AddTaskItemCommandResult(Guid Id);
+public record AddTaskItemResponse(bool succeeded, Guid taskId = default);
 
-public class AddTaskItemCommandHandler : ICommandHandler<AddTaskItemCommand, AddTaskItemCommandResult>
+public class AddTaskItemCommandHandler : ICommandHandler<AddTaskItemCommand, AddTaskItemResponse>
 {
     private readonly ITaskRepository _context;
 
@@ -19,11 +19,11 @@ public class AddTaskItemCommandHandler : ICommandHandler<AddTaskItemCommand, Add
         _context = context;
     }
 
-    public async Task<AddTaskItemCommandResult> Handle(AddTaskItemCommand command, CancellationToken cancellationToken)
+    public async Task<AddTaskItemResponse> Handle(AddTaskItemCommand command, CancellationToken cancellationToken)
     {
         var newTask = TaskItem.Create(command.userId);
         newTask.Update(newTask);
-        await _context.TryAddTaskItem(newTask, cancellationToken);
-        return new AddTaskItemCommandResult(newTask.Id);
+        var success = await _context.TryAddTaskItem(newTask, cancellationToken);
+        return new AddTaskItemResponse(success, newTask.Id);
     }
 }

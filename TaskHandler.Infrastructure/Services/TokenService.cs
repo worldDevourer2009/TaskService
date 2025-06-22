@@ -98,7 +98,7 @@ public class TokenService : ITokenService
         return accessToken;
     }
 
-    public async Task<(RefreshToken hashedToken, string rawToken)> GenerateRefreshToken(Guid userId,
+    private async Task<(RefreshToken hashedToken, string rawToken)> GenerateRefreshToken(Guid userId,
         CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetById(userId, cancellationToken);
@@ -155,34 +155,6 @@ public class TokenService : ITokenService
         }
         
         return (accessToken, refreshToken, rawToken);
-    }
-
-    public Task<Guid> GetUserIdFromToken(string token, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            throw new ArgumentNullException("Token is required" + nameof(token));
-        }
-
-        if (!_jwtSecurityTokenHandler.CanReadToken(token))
-        {
-            throw new Exception("Token is invalid");
-        }
-
-        var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(token);
-        var subClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
-
-        if (subClaim == null)
-        {
-            throw new Exception("Can't read user id from token");
-        }
-
-        if (!Guid.TryParse(subClaim.Value, out var userId))
-        {
-            throw new Exception("Can't parse user id from token");
-        }
-
-        return Task.FromResult(userId);
     }
 
     public async Task<bool> ValidateToken(string token, CancellationToken cancellationToken = default)

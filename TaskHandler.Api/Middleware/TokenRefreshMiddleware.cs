@@ -34,14 +34,12 @@ public class TokenRefreshMiddleware
             if (!context.Request.Cookies.TryGetValue("refresh_token", out var refreshToken))
             {
                 _logger.LogInformation("No refresh token found in cookies");
-                RedirectionToLogin(context);
                 return;
             }
 
             if (!await tokenService.IsRefreshTokenValid(refreshToken))
             {
                 _logger.LogInformation("Invalid refresh token");
-                RedirectionToLogin(context);
                 return;
             }
 
