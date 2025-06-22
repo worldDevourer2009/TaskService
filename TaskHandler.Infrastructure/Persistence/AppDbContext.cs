@@ -75,7 +75,10 @@ public class AppDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-            entity.ToTable("revoked_tokens");
+            entity.ToTable("revoked_refresh_tokens");
+            entity.HasKey(e => e.TokenHash);
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").IsRequired();
+            entity.Property(e => e.ExpirationDate).HasColumnName("expiration_date").IsRequired();
         });
     }
 }
