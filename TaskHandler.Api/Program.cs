@@ -142,17 +142,6 @@ builder.Services.AddControllers()
 
 builder.Services.AddOpenApi();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
-        });
-});
-
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql")
     .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "redis");
@@ -170,24 +159,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseTokenRefresh();
 app.UseHttpsRedirection();
-app.UseExceptionHandler();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseCors();
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
+app.UseExceptionHandler();
+app.UseCors("AllowAll");
+
 app.UseSerilogRequestLogging();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapTaskEndpoints();
-app.MapPostTaskEndpoints();
-app.MapUpdateTaskItemEndpoint();
-app.MapDeleteTaskItemEndpoints();
+app.MapTasksEndpoints();
 app.SetupEmailEndPoint();
 app.MapHealthChecks("/health");
 app.MapUserEndpoints();
@@ -212,5 +199,19 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var ds = app.Services.GetRequiredService<EndpointDataSource>();
+    app.Logger.LogInformation("=== Registered endpoints ===");
+    foreach (var e in ds.Endpoints)
+    {
+        app.Logger.LogInformation($"  • {e.DisplayName}");
+    }
+    app.Logger.LogInformation("============================");
+});
+
 app.Logger.LogInformation("TaskHandler API starting up...");
+
 app.Run();
+
+public partial class Program;

@@ -8,8 +8,6 @@ public record GetTaskItemsQuery(Guid? UserId = null) : IQuery<GetTaskItemsRespon
 
 public record GetTaskItemsResponse(List<GetTasItemkDTO> TaskItems);
 
-public record GetTaskItemsRequest(Guid? UserId = null);
-
 public class GetTaskItemsQueryHandler : IQueryHandler<GetTaskItemsQuery, GetTaskItemsResponse>
 {
     private readonly IApplicationDbContext _context;
