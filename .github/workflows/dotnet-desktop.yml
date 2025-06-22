@@ -25,6 +25,16 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     strategy:
       matrix:
         dotnet-version: [ '9.0.x' ]
@@ -36,6 +46,7 @@ jobs:
         Database=taskhandler;
         Username=taskhandler_user;
         Password=taskhandler_password;
+      ConnectionStrings__Redis: localhost:6379
       JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
       JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
       JwtSettings__Key: ${{ secrets.JWT_KEY }}
@@ -57,8 +68,8 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Install PostgreSQL and Redis clients
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools
 
       - name: Restore dependencies
         run: dotnet restore
@@ -66,12 +77,19 @@ jobs:
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
-      - name: Wait for Postgres
+      - name: Wait for Postgres and Redis
         run: |
           echo "Waiting for PostgreSQL to be ready..."
           until pg_isready -h localhost -p 5432 -U taskhandler_user; do
             sleep 2
           done
+          echo "PostgreSQL is ready!"
+          
+          echo "Waiting for Redis to be ready..."
+          until redis-cli -h localhost -p 6379 ping; do
+            sleep 2
+          done
+          echo "Redis is ready!"
 
       - name: Run tests
         run: |
