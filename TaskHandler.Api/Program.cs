@@ -6,9 +6,6 @@ using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using TaskHandler.Api.Endpoints.Emails;
-using TaskHandler.Api.Endpoints.Tasks;
-using TaskHandler.Api.Endpoints.Users;
 using TaskHandler.Api.Exceptions.Handlers;
 using TaskHandler.Api.Middleware;
 using TaskHandler.Application;
@@ -174,10 +171,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapTasksEndpoints();
-app.SetupEmailEndPoint();
 app.MapHealthChecks("/health");
-app.MapUserEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

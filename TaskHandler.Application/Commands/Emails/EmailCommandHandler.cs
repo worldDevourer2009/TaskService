@@ -23,13 +23,20 @@ public class EmailCommandHandler : ICommandHandler<SendEmailCommand, SendEmailCo
     public async Task<SendEmailCommandResponse> Handle(SendEmailCommand request,
         CancellationToken cancellationToken)
     {
-        var command = new SendEmailCommand(request.Email, request.Subject, request.Message, request.HtmlMessage,
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Subject) ||
+            string.IsNullOrWhiteSpace(request.Message))
+        {
+            return new SendEmailCommandResponse(false);
+        }
+        
+        var success = await _emailSender.SendEmailAsync(
+            request.Email,
+            request.Subject,
+            request.Message,
+            request.HtmlMessage,
             request.Attachments);
 
-        var response = command.Email != null && command.Subject != null && command.Message != null &&
-                       await _emailSender.SendEmailAsync(command.Email, command.Subject, command.Message,
-                           command.HtmlMessage, command.Attachments);
-
-        return new SendEmailCommandResponse(response);
+        return new SendEmailCommandResponse(success);
     }
 }

@@ -113,7 +113,7 @@ public class SmtpEmailSender : IEmailSender
                 Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
             }
             
-            throw;
+            return false;
         }
     }
 }

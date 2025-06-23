@@ -273,13 +273,32 @@ public class TokenService : ITokenService
         {
             var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(jwtString);
             var jti = jwtToken.Claims.First(claim => claim.Type == JwtRegisteredClaimNames.Jti).Value;
+            var userIdClaim = jwtToken.Claims.First(claim => claim.Type == JwtRegisteredClaimNames.Sub).Value;
+            var authTimeClaim = jwtToken.Claims.FirstOrDefault(claim => claim.Type == JwtRegisteredClaimNames.AuthTime)?.Value;
 
-            if (string.IsNullOrEmpty(jti))
+            if (string.IsNullOrEmpty(jti) || string.IsNullOrEmpty(userIdClaim))
             {
                 return true;
             }
+            
+            if (await _redisService.KeyExistsAsync(RevokedKey(jti)))
+            {
+                return true;
+            }
+            
+            var userRevokeKey = $"user_revoked:{userIdClaim}";
+            var userRevokeTimestamp = await _redisService.GetAsync(userRevokeKey);
+        
+            if (!string.IsNullOrEmpty(userRevokeTimestamp) && !string.IsNullOrEmpty(authTimeClaim))
+            {
+                if (long.TryParse(userRevokeTimestamp, out var revokeTime) && 
+                    long.TryParse(authTimeClaim, out var authTime))
+                {
+                    return authTime < revokeTime;
+                }
+            }
 
-            return await _redisService.KeyExistsAsync(RevokedKey(jti));
+            return false;
         }
         catch
         {
@@ -338,6 +357,48 @@ public class TokenService : ITokenService
         
         var (newTokenAccess, newTokenRefresh, newRawRefreshToken) = await GenerateTokenPair(id, cancellationToken);
         return (newTokenAccess, newTokenRefresh, newRawRefreshToken);
+    }
+
+    public async Task<bool> RevokeAllTokensForUser(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetById(userId, cancellationToken);
+        
+        if (user == null)
+        {
+            return false;
+        }
+        
+        try
+        {
+            var refreshKeyPattern = RefreshKey("*");
+            var refreshKeys = await _redisService.GetKeysByPatternAsync(refreshKeyPattern);
+            
+            foreach (var key in refreshKeys)
+            {
+                var storedUserId = await _redisService.GetAsync(key);
+                if (storedUserId == userId.ToString())
+                {
+                    await _redisService.RemoveAsync(key);
+                    
+                    var hash = key.Replace("refresh:", "");
+                    await _revokedRefreshTokenRepository.RevokeToken(hash);
+                }
+            }
+            
+            var userRevokeKey = $"user_revoked:{userId}";
+            var revokeTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            
+            var accessTokenLifetime = TimeSpan.FromMinutes(int.Parse(_configuration["JwtSettings:AccessTokenLifetimeMinutes"] ?? "60"));
+            await _redisService.SetAsync(userRevokeKey, revokeTimestamp, accessTokenLifetime);
+            
+            _logger.LogInformation("All tokens revoked for user {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error revoking all tokens for user {UserId}", userId);
+            return false;
+        }
     }
     
     private static string RefreshKey(string hash) => $"refresh:{hash}";
