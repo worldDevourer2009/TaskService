@@ -28,7 +28,7 @@ public class UpdateTaskItemCommandHandler : ICommandHandler<UpdateTaskItemComman
     {
         try
         {
-            var task = await _context.GetTaskItemById(request.Id);
+            var task = await _context.GetTaskItemById(request.Id, cancellationToken);
             await _context.UpdateTaskItem(task, cancellationToken);
             return new UpdateTaskItemCommandResult(true, "Task updated successfully");
         }

@@ -70,7 +70,7 @@ public class User : Entity
         IsActive = true;
     }
     
-    public void Inactivate()
+    public void Logout()
     {
         LastLogin = DateTime.UtcNow;
         IsActive = false;

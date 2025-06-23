@@ -1,11 +1,10 @@
 using Microsoft.Extensions.Logging;
-using TaskHandler.Application.DTOs.User;
 using TaskHandler.Domain.Services;
 
 namespace TaskHandler.Application.Commands.Users;
 
-public record LoginUserCommand(string email, string password) : ICommand<LoginUserResponse>;
-public record LoginUserResponse(bool success, string? message);
+public record LoginUserCommand(string Email, string Password) : ICommand<LoginUserResponse>;
+public record LoginUserResponse(bool Success, string? Message);
 
 public class LoginUserCommandHandler : ICommandHandler<LoginUserCommand, LoginUserResponse>
 {
@@ -20,13 +19,9 @@ public class LoginUserCommandHandler : ICommandHandler<LoginUserCommand, LoginUs
     
     public async Task<LoginUserResponse> Handle(LoginUserCommand command, CancellationToken cancellationToken)
     {
-        var dto = new UserLoginDTO();
-        dto.Email = command.email;
-        dto.Password = command.password;
-
         try
         {
-            var result = await _userLoginService.LoginAsync(dto.Email, dto.Password, cancellationToken);
+            var result = await _userLoginService.LoginAsync(command.Email, command.Password, cancellationToken);
             
             return !result ? new LoginUserResponse(result, "Login failed") 
                 : new LoginUserResponse(result, "Login success");

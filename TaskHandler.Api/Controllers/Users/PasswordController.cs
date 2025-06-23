@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskHandler.Application.Commands.Passwords;
 
-namespace TaskHandler.Api.Controllers;
+namespace TaskHandler.Api.Controllers.Users;
 
 [ApiController]
 [Route("api/[controller]")]

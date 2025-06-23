@@ -1,12 +1,11 @@
 using Microsoft.Extensions.Logging;
-using TaskHandler.Application.DTOs.User;
 using TaskHandler.Domain.Services;
 
 namespace TaskHandler.Application.Commands.Users;
 
-public record SignUpUserCommand(string name, string email, string password) : ICommand<SignUpUserCommandResponse>;
+public record SignUpUserCommand(string Name, string Email, string Password) : ICommand<SignUpUserCommandResponse>;
 
-public record SignUpUserCommandResponse(string message, bool success);
+public record SignUpUserCommandResponse(string Message, bool Success);
 
 public class SignUpUserCommandHandler : ICommandHandler<SignUpUserCommand, SignUpUserCommandResponse>
 {
@@ -21,21 +20,16 @@ public class SignUpUserCommandHandler : ICommandHandler<SignUpUserCommand, SignU
     
     public async Task<SignUpUserCommandResponse> Handle(SignUpUserCommand command, CancellationToken cancellationToken)
     {
-        var dto = new UserSingUpDTO();
-        dto.Email = command.email;
-        dto.Name = command.name;
-        dto.Password = command.password;
-
         try
         {
-            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email) ||
-                string.IsNullOrWhiteSpace(dto.Password))
+            if (string.IsNullOrWhiteSpace(command.Name) || string.IsNullOrWhiteSpace(command.Email) ||
+                string.IsNullOrWhiteSpace(command.Password))
             {
                 return new SignUpUserCommandResponse("Invalid data", false);
             }
             
             var result = new SignUpUserCommandResponse("User has been created", await
-                _userSignUpService.SignUpAsync(dto.Name, dto.Email, dto.Password, cancellationToken));
+                _userSignUpService.SignUpAsync(command.Name, command.Email, command.Password, cancellationToken));
             
             return result;
         }

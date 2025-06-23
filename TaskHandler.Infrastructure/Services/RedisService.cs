@@ -52,4 +52,23 @@ public class RedisService : IRedisService
 
         return await _database.KeyExistsAsync(key);
     }
+
+    public async Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern)
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+        {
+            throw new ArgumentException("Pattern can't be null or empty", nameof(pattern));
+        }
+
+        try
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys = await Task.Run(() => server.Keys(pattern: pattern));
+            return keys.Select(key => key.ToString()).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error getting keys by pattern '{pattern}'", ex);
+        }
+    }
 }

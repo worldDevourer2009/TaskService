@@ -46,7 +46,7 @@ public class UserLoginService : IUserLoginService
             return false;
         }
         
-        user.Inactivate();
+        user.Logout();
         return true;
     }
 }

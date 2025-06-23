@@ -14,4 +14,5 @@ public interface ITokenService
     Task<bool> IsAccessTokenRevoked(string token);
     Task<bool> RevokeAccessToken(string token);
     Task<bool> RevokeRefreshToken(string rawRefreshToken);
+    Task<bool> RevokeAllTokensForUser(Guid userId, CancellationToken cancellationToken = default);
 }
