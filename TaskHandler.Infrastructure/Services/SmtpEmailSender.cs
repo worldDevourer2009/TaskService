@@ -1,11 +1,15 @@
 using System.Net;
 using System.Net.Mail;
+using Microsoft.Extensions.Options;
 using TaskHandler.Domain.Services;
+using TaskHandler.Infrastructure.Configurations;
 
 namespace TaskHandler.Infrastructure.Services;
 
 public class SmtpEmailSender : IEmailSender
 {
+    private readonly EmailSettings _emailSettings;
+    
     private readonly string? _smtpServer;
     private readonly int _smtpPort;
     private readonly string? _smtpUser;
@@ -30,6 +34,19 @@ public class SmtpEmailSender : IEmailSender
         _smtpFrom = smtpFrom;
         _smtpFromDisplayName = smtpFromDisplayName;
         _smtpEnableSsl = smtpEnableSsl;
+    }
+    
+    public SmtpEmailSender(IOptions<EmailSettings> emailSettings)
+    {
+        _emailSettings = emailSettings.Value;
+        
+        _smtpServer = _emailSettings.SmtpServer;;
+        _smtpPort = _emailSettings.SmtpPort;;
+        _smtpUser = _emailSettings.UsernameSmtp;
+        _smtpPassword = _emailSettings.PasswordSmtp;
+        _smtpFrom = _emailSettings.FromSmtpName;
+        _smtpFromDisplayName = _emailSettings.FromSmtpDisplayName;
+        _smtpEnableSsl = _emailSettings.EnableSmtpSsl;
     }
     
     public async Task<bool> SendEmailAsync(string email, string subject, string message)

@@ -13,12 +13,12 @@ using Assert = Xunit.Assert;
 
 namespace TaskHandler.Tests.Users;
 
-public class UserEndpointTest : IClassFixture<WebApplicationFactory<Program>>
+public class UserControllerTest : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _webApplicationFactory;
     private readonly ITestOutputHelper _output;
 
-    public UserEndpointTest(WebApplicationFactory<Program> webApplicationFactory, ITestOutputHelper output)
+    public UserControllerTest(WebApplicationFactory<Program> webApplicationFactory, ITestOutputHelper output)
     {
         _output = output;
         _webApplicationFactory = webApplicationFactory.WithWebHostBuilder(builder =>

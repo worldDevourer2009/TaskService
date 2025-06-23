@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using TaskHandler.Domain.Entities;
 using TaskHandler.Domain.Repositories;
 using TaskHandler.Domain.Services;
 using TaskHandler.Domain.ValueObjects;
+using TaskHandler.Infrastructure.Configurations;
 using TaskHandler.Infrastructure.Services;
 using Xunit;
 
@@ -15,7 +17,6 @@ public class UserAuthTest
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IRedisService> _redisServiceMock;
     private readonly Mock<IRevokedRefreshTokenRepository> _revokedRefreshTokenRepositoryMock;
-    private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<TokenService>> _loggerMock;
     private readonly TokenService _tokenService;
 
@@ -24,17 +25,21 @@ public class UserAuthTest
         _userRepositoryMock = new Mock<IUserRepository>();
         _redisServiceMock = new Mock<IRedisService>();
         _revokedRefreshTokenRepositoryMock = new Mock<IRevokedRefreshTokenRepository>();
-        _configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<TokenService>>();
+
+        var jwtSettings = new JwtSettings()
+        {
+            Key = "MIHcAgEBBEIB7Ciph8O5ZeuVT46lzj7cRyPxZaiGxh1pvqnHIwNC/gXd6fDFmTOo\ns8NQ+PSCQglLRpZv6rMp3j5FUsBcocT1OZmgBwYFK4EEACOhgYkDgYYABAFsumQX\njiC/meBVIjpI2aRUH1v2YjOdVOzyrZKiqCNHfG7H9RMraMW6OO78EZAfMgSvr5TW\nieLYX3L0wyh2117osQGBEzePMBDxBnNBxZqg6AtPiXNyfRe0/vuukjdMSfgoQ37s\nMf9YOgNT7YRxpQUrrC90tv98eU5BTdaq7qhPNvY4tg==",
+            Issuer = "test_issuer",
+            Audience = "test_audience",
+            RefreshTokenLifetimeDays = 60,
+            AccessTokenLifetimeMinutes = 7,
+        };
         
-        _configurationMock.Setup(x => x["JwtSettings:Key"]).Returns("MIHcAgEBBEIB7Ciph8O5ZeuVT46lzj7cRyPxZaiGxh1pvqnHIwNC/gXd6fDFmTOo\ns8NQ+PSCQglLRpZv6rMp3j5FUsBcocT1OZmgBwYFK4EEACOhgYkDgYYABAFsumQX\njiC/meBVIjpI2aRUH1v2YjOdVOzyrZKiqCNHfG7H9RMraMW6OO78EZAfMgSvr5TW\nieLYX3L0wyh2117osQGBEzePMBDxBnNBxZqg6AtPiXNyfRe0/vuukjdMSfgoQ37s\nMf9YOgNT7YRxpQUrrC90tv98eU5BTdaq7qhPNvY4tg==");
-        _configurationMock.Setup(x => x["JwtSettings:Issuer"]).Returns("test_issuer");
-        _configurationMock.Setup(x => x["JwtSettings:Audience"]).Returns("test_audience");
-        _configurationMock.Setup(x => x["JwtSettings:AccessTokenLifetimeMinutes"]).Returns("60");
-        _configurationMock.Setup(x => x["JwtSettings:RefreshTokenLifetimeDays"]).Returns("7");
+        var options = Options.Create(jwtSettings);
         
         _tokenService = new TokenService(_userRepositoryMock.Object, _redisServiceMock.Object,
-            _revokedRefreshTokenRepositoryMock.Object, _configurationMock.Object, _loggerMock.Object);
+            _revokedRefreshTokenRepositoryMock.Object, options, _loggerMock.Object);
     }
 
     [Fact]
@@ -129,5 +134,13 @@ public class UserAuthTest
 
         // Assert
         Assert.True(isValid);
+    }
+
+    [Fact]
+    public Task LogoutUser_And_Token_Are_Revoked()
+    {
+        //Arrange
+        
+        return Task.CompletedTask;
     }
 }

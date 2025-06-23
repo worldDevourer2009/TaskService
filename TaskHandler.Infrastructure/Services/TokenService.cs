@@ -5,11 +5,13 @@ using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TaskHandler.Application.Interfaces;
 using TaskHandler.Domain.Repositories;
 using TaskHandler.Domain.Services;
 using TaskHandler.Domain.ValueObjects;
+using TaskHandler.Infrastructure.Configurations;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace TaskHandler.Infrastructure.Services;
@@ -20,29 +22,29 @@ public class TokenService : ITokenService
     private readonly IRedisService _redisService;
     private readonly IRevokedRefreshTokenRepository _revokedRefreshTokenRepository;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
     private readonly ILogger<TokenService> _logger;
     private readonly string? _secretKey;
     private readonly string? _issuer;
 
-    public TokenService(IUserRepository userRepository, IRedisService redisService, IRevokedRefreshTokenRepository refreshTokenRepository, IConfiguration configuration,
+    public TokenService(IUserRepository userRepository, IRedisService redisService, IRevokedRefreshTokenRepository refreshTokenRepository, IOptions<JwtSettings> jwtSettings,
         ILogger<TokenService> logger)
     {
         _userRepository = userRepository;
         _revokedRefreshTokenRepository = refreshTokenRepository;
         _redisService = redisService;
+        _jwtSettings = jwtSettings.Value;
         
-        _configuration = configuration;
         _logger = logger;
 
-        _secretKey = configuration["JwtSettings:Key"];
+        _secretKey = _jwtSettings.Key;
 
         if (string.IsNullOrEmpty(_secretKey))
         {
             throw new Exception("JwtSettings:Key is required");
         }
 
-        _issuer = configuration["JwtSettings:Issuer"];
+        _issuer = _jwtSettings.Issuer;
 
         if (string.IsNullOrEmpty(_issuer))
         {
@@ -86,12 +88,12 @@ public class TokenService : ITokenService
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var now = DateTime.UtcNow;
-        var token = new JwtSecurityToken(_issuer, audience: _configuration["JwtSettings:Audience"], claims,
+        var token = new JwtSecurityToken(_issuer, audience: _jwtSettings.Audience, claims,
             expires: now.AddMinutes(60),
             signingCredentials: credentials,
             notBefore: now);
 
-        var timeSpan = TimeSpan.FromMinutes(int.Parse(_configuration["JwtSettings:AccessTokenLifetimeMinutes"] ?? "60"));
+        var timeSpan = TimeSpan.FromMinutes(_jwtSettings.AccessTokenLifetimeMinutes);
         
         var tokenString = _jwtSecurityTokenHandler.WriteToken(token);
         var accessToken = AccessToken.Create(tokenString, timeSpan);
@@ -117,7 +119,7 @@ public class TokenService : ITokenService
         var opaqueToken = WebEncoders.Base64UrlEncode(randomBytes);
         var tokenHash = SHA256.HashData(Encoding.UTF8.GetBytes(opaqueToken));
         
-        var timeSpan = TimeSpan.FromDays(int.Parse(_configuration["JwtSettings:RefreshTokenLifetimeDays"] ?? "7"));
+        var timeSpan = TimeSpan.FromDays(_jwtSettings.RefreshTokenLifetimeDays);
         
         var refreshToken = RefreshToken.Create(Convert.ToHexString(tokenHash), timeSpan);
         return (refreshToken, opaqueToken);
@@ -388,7 +390,7 @@ public class TokenService : ITokenService
             var userRevokeKey = $"user_revoked:{userId}";
             var revokeTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
             
-            var accessTokenLifetime = TimeSpan.FromMinutes(int.Parse(_configuration["JwtSettings:AccessTokenLifetimeMinutes"] ?? "60"));
+            var accessTokenLifetime = TimeSpan.FromMinutes(_jwtSettings.AccessTokenLifetimeMinutes);
             await _redisService.SetAsync(userRevokeKey, revokeTimestamp, accessTokenLifetime);
             
             _logger.LogInformation("All tokens revoked for user {UserId}", userId);

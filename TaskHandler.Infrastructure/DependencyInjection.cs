@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using TaskHandler.Application.Interfaces;
 using TaskHandler.Domain.Repositories;
@@ -16,6 +15,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+        
         services.AddScoped<IDataSeeder, DataSeeder>();
         services.AddScoped<IUserPasswordService, UserPasswordService>();
         services.AddScoped<IUserRepository, UserRepository>();
@@ -25,9 +27,6 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IRevokedRefreshTokenRepository, RevokedRefreshTokenRepository>();
         services.AddScoped<IUserLogoutService, UserLogoutService>();
-        
-        services.Configure<EmailSettings>(options => configuration.GetSection("EmailSettings"));
-        services.Configure<JwtSettings>(options => configuration.GetSection("JwtSettings"));
 
         BindRedis(services, configuration);
         BindEmailService(services, configuration);
@@ -63,18 +62,6 @@ public static class DependencyInjection
 
     private static void BindEmailService(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IEmailSender>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<EmailSettings>>().Value;
-            
-            return new SmtpEmailSender(
-                options.SmtpServer,
-                options.SmtpPort,
-                options.UsernameSmtp,
-                options.PasswordSmtp,
-                options.EnableSmtpSsl,
-                options.FromSmtpName,
-                options.FromSmtpDisplayName);
-        });
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
     }
 }
