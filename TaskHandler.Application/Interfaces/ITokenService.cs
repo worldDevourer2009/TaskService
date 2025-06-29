@@ -4,10 +4,10 @@ namespace TaskHandler.Application.Interfaces;
 
 public interface ITokenService
 {
-    Task<(AccessToken accessToken, RefreshToken refreshToken, string rawRefreshToken)> GenerateTokenPair(Guid userId,
+    Task<(AccessToken accessToken, RefreshToken refreshToken, string rawRefreshToken, string rawAccessToken)> GenerateTokenPair(Guid userId,
         CancellationToken cancellationToken = default);
     Task<bool> ValidateToken(string token, CancellationToken cancellationToken = default);
-    Task<(AccessToken newAccessToken, RefreshToken newRefreshToken, string rawRefreshToken)> RefreshTokens(
+    Task<(AccessToken newAccessToken, RefreshToken newRefreshToken, string rawRefreshToken, string rawAccessToken)> RefreshTokens(
         string rawRefreshToken, CancellationToken cancellationToken = default
     );
     Task<bool> IsRefreshTokenValid(string rawRefreshToken);

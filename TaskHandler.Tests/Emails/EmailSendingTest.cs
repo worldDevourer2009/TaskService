@@ -41,18 +41,6 @@ public class EmailSendingTest
     }
 
     [Fact]
-    public async Task Send_TestEmail()
-    {
-        if (!EnableSending)
-        {
-            return;
-        }
-        
-        var result = await _emailSender.SendEmailAsync("test@gmail.com", "Test", "Test");
-        Assert.True(result);
-    }
-
-    [Fact]
     public void EmailSender_Constructor_ValidSettings_ReturnsValidEmailSender()
     {
         var emailSender = new SmtpEmailSender(

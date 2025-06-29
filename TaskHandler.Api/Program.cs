@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using TaskHandler.Application.Interfaces;
 using Serilog;
@@ -7,13 +7,9 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using TaskHandler.Api.Exceptions.Handlers;
-using TaskHandler.Api.Middleware;
 using TaskHandler.Application;
 using TaskHandler.Application.Behaviors;
-using TaskHandler.Application.Events.Users;
 using TaskHandler.Application.Services;
-using TaskHandler.Domain.DomainsEvents.Users;
-using TaskHandler.Domain.Services;
 using TaskHandler.Infrastructure;
 using TaskHandler.Infrastructure.Persistence;
 
@@ -26,57 +22,29 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(6000, listenOptions => { listenOptions.UseHttps(); });
 });
 
+var handler = new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+};
+
+var httpClient = new HttpClient(handler);
+var rsa = RSA.Create();
+var publicKeyPem = await httpClient.GetStringAsync("https://localhost:9500/.well-known/public-key.pem");
+rsa.ImportFromPem(publicKeyPem);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
-            {
-                var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-                
-                if (jti == null)
-                {
-                    context.Fail("Invalid token");
-                }
-
-                var redisService = context.HttpContext.RequestServices.GetRequiredService<IRedisService>();
-                var isRevoked = await redisService.KeyExistsAsync($"revoked:{jti}");
-
-                if (isRevoked)
-                {
-                    context.Fail("Invalid token");
-                }
-            },
-
-            OnAuthenticationFailed = context =>
-            {
-                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                logger.LogInformation("Authentication failed: {Exception}", context.Exception.Message);
-                return Task.CompletedTask;
-            },
-
-            OnMessageReceived = context =>
-            {
-                if (context.Request.Cookies.TryGetValue("access_token", out var token))
-                {
-                    context.Token = token;
-                }
-
-                return Task.CompletedTask;
-            }
-        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"] ?? string.Empty)),
-            ClockSkew = TimeSpan.FromMinutes(1)
+            IssuerSigningKey = new RsaSecurityKey(rsa),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "test-issuer",
+            ValidAudience = builder.Configuration["JwtSettings:Audience"] ?? "test-audience",
         };
     });
 
@@ -87,9 +55,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins("https://localhost:5273")
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         });
 });
 
@@ -106,8 +75,6 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
     provider.GetRequiredService<AppDbContext>());
 
 builder.Services.AddScoped<IDomainDispatcher, DomainDispatcher>();
-
-builder.Services.AddScoped<IDomainEventHandler<UserCreatedDomainEvent>, NewUserCreatedEventHandler>();
 
 builder.Services.AddMediatR(config =>
 {
@@ -140,8 +107,7 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql")
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "redis");
+    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgresql");
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -154,7 +120,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/openapi/v1.json", "TaskHandler API v1"); });
 }
 
-app.UseTokenRefresh();
 app.UseHttpsRedirection();
 
 if (!app.Environment.IsDevelopment())

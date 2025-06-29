@@ -34,42 +34,11 @@ public class DataSeeder : IDataSeeder
                 _dbContext.TaskItems.RemoveRange(_dbContext.TaskItems);
                 await _dbContext.SaveChangesAsync();
             }
-
-            await SeedUsers();
+            
             await SeedTasks();
 
             await _dbContext.SaveChangesAsync();
             _logger.LogInformation("Data seeding completed successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while seeding the database");
-            throw;
-        }
-    }
-
-    private async Task SeedUsers()
-    {
-        try
-        {
-            if (!await _dbContext.Users.AnyAsync())
-            {
-                var users = new List<User>();
-
-                var user1 = User.Create(Email.Create("paul@taskhandler.com"), Password.Create("123abcpppppppppp"),
-                    "Paul");
-                var user2 = User.Create(Email.Create("pierre@taskhandler.com"), Password.Create("password2223"),
-                    "Pierre");
-                var user3 = User.Create(Email.Create("nicolas@taskhandler.com"), Password.Create("password344"),
-                    "Nicolas");
-
-                users.Add(user1);
-                users.Add(user2);
-                users.Add(user3);
-
-                await _dbContext.Users.AddRangeAsync(users);
-                _logger.LogInformation("Seeded {Count} users", users.Count);
-            }
         }
         catch (Exception ex)
         {
