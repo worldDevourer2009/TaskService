@@ -1,6 +1,6 @@
-using TaskHandler.Domain.Enums;
 using TaskHandler.Domain.Repositories;
-using TaskStatus = TaskHandler.Domain.Enums.TaskStatus;
+using TaskHandler.Shared.Tasks.Enums;
+using TaskStatus = TaskHandler.Shared.Tasks.Enums.TaskStatus;
 
 namespace TaskHandler.Application.Commands.UpdateTaskItem;
 

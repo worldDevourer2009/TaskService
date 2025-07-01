@@ -1,5 +1,5 @@
 using TaskHandler.Domain.Entities;
-using TaskHandler.Domain.Enums;
+using TaskHandler.Shared.Tasks.Enums;
 
 namespace TaskHandler.Domain.Specifications.Tasks;
 

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using TaskHandler.Application.DTOs;
 using TaskHandler.Application.Interfaces;
+using TaskHandler.Shared.Tasks.DTOs;
 
 namespace TaskHandler.Application.Queries.GetTaskItems;
 

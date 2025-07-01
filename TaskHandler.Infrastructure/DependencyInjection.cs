@@ -1,14 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
-using TaskHandler.Application.Interfaces;
 using TaskHandler.Domain.Repositories;
-using TaskHandler.Domain.Services;
 using TaskHandler.Infrastructure.Configurations;
 using TaskHandler.Infrastructure.Persistence;
 using TaskHandler.Infrastructure.Repositories;
-using TaskHandler.Infrastructure.Services;
 
 namespace TaskHandler.Infrastructure;
 
@@ -29,6 +24,5 @@ public static class DependencyInjection
 
     private static void BindEmailService(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IEmailSender, SmtpEmailSender>();
     }
 }
