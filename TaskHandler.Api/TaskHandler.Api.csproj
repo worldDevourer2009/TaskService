@@ -5,6 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-TaskHandler.Api-68a41c22-596e-462c-83ce-23ae1749b1a4</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,6 +25,12 @@
     <ItemGroup>
       <ProjectReference Include="..\TaskHandler.Application\TaskHandler.Application.csproj" />
       <ProjectReference Include="..\TaskHandler.Infrastructure\TaskHandler.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>
