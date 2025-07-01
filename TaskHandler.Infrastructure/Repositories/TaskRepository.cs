@@ -18,13 +18,6 @@ public class TaskRepository : ITaskRepository
 
     public async Task<TaskItem> GetTaskItemForUser(Guid userId, Guid taskId, CancellationToken cancellationToken = default)
     {
-        var user = await _context.Users.FindAsync([userId, cancellationToken], cancellationToken: cancellationToken).AsTask();
-
-        if (user == null)
-        {
-            throw new Exception("User not found");
-        }
-        
         var task = await _context.TaskItems.FindAsync([taskId, cancellationToken], cancellationToken: cancellationToken).AsTask();
         
         if (task == null)
@@ -54,13 +47,6 @@ public class TaskRepository : ITaskRepository
 
     public async Task<IEnumerable<TaskItem>> GetAllTasksForUser(Guid userId, CancellationToken cancellationToken = default)
     {
-        var user = await _context.Users.FindAsync([userId, cancellationToken], cancellationToken: cancellationToken).AsTask();
-
-        if (user == null)
-        {
-            throw new Exception("User not found");
-        }
-        
         var tasks = await _context.TaskItems.Where(tasks => tasks.UserId == userId).ToListAsync(cancellationToken);
 
         if (tasks.Count == 0)

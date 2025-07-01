@@ -1,10 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TaskHandler.Domain;
 using TaskHandler.Domain.Entities;
-using TaskHandler.Domain.Enums;
-using TaskHandler.Domain.ValueObjects;
-using TaskStatus = TaskHandler.Domain.Enums.TaskStatus;
+using TaskHandler.Shared.Tasks.Enums;
 
 namespace TaskHandler.Infrastructure.Persistence;
 
@@ -34,42 +31,11 @@ public class DataSeeder : IDataSeeder
                 _dbContext.TaskItems.RemoveRange(_dbContext.TaskItems);
                 await _dbContext.SaveChangesAsync();
             }
-
-            await SeedUsers();
+            
             await SeedTasks();
 
             await _dbContext.SaveChangesAsync();
             _logger.LogInformation("Data seeding completed successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while seeding the database");
-            throw;
-        }
-    }
-
-    private async Task SeedUsers()
-    {
-        try
-        {
-            if (!await _dbContext.Users.AnyAsync())
-            {
-                var users = new List<User>();
-
-                var user1 = User.Create(Email.Create("paul@taskhandler.com"), Password.Create("123abcpppppppppp"),
-                    "Paul");
-                var user2 = User.Create(Email.Create("pierre@taskhandler.com"), Password.Create("password2223"),
-                    "Pierre");
-                var user3 = User.Create(Email.Create("nicolas@taskhandler.com"), Password.Create("password344"),
-                    "Nicolas");
-
-                users.Add(user1);
-                users.Add(user2);
-                users.Add(user3);
-
-                await _dbContext.Users.AddRangeAsync(users);
-                _logger.LogInformation("Seeded {Count} users", users.Count);
-            }
         }
         catch (Exception ex)
         {
@@ -90,42 +56,42 @@ public class DataSeeder : IDataSeeder
             var task1 = TaskItem.Create(userId);
             task1.SetTitle("Configure PostgreSQL");
             task1.SetDescription("Connect PostgreSQL and create migrations");
-            task1.SetStatus(TaskStatus.Done);
+            task1.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.Done);
             task1.SetPriority(TaskPriority.High);
             task1.TaskType = TaskType.Work;
 
             var task2 = TaskItem.Create(userId2);
             task2.SetTitle("Create API Controllers");
             task2.SetDescription("Create API Controllers for Task and User");
-            task2.SetStatus(TaskStatus.InProgress);
+            task2.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.InProgress);
             task2.SetPriority(TaskPriority.High);
             task2.TaskType = TaskType.Work;
 
             var task3 = TaskItem.Create(userId3);
             task3.SetTitle("Write tests");
             task3.SetDescription("make code with unit and integration tests");
-            task3.SetStatus(TaskStatus.Pending);
+            task3.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.Pending);
             task3.SetPriority(TaskPriority.Medium);
             task3.TaskType = TaskType.Work;
 
             var task4 = TaskItem.Create(userId2);
             task4.SetTitle("Go buy groceries");
             task4.SetDescription("Milk, eggs, bread, cheese, etc.");
-            task4.SetStatus(TaskStatus.Pending);
+            task4.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.Pending);
             task4.SetPriority(TaskPriority.Low);
             task4.TaskType = TaskType.Personal;
 
             var task5 = TaskItem.Create(userId2);
             task5.SetTitle("Learn .NET 9");
             task5.SetDescription("Look for new features in .NET 9");
-            task5.SetStatus(TaskStatus.InProgress);
+            task5.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.InProgress);
             task5.SetPriority(TaskPriority.High);
             task5.TaskType = TaskType.Studies;
 
             var task6 = TaskItem.Create(userId);
             task6.SetTitle("Learn 123 .NET 9");
             task6.SetDescription("Look 123 for new features in .NET 9");
-            task6.SetStatus(TaskStatus.InProgress);
+            task6.SetStatus(TaskHandler.Shared.Tasks.Enums.TaskStatus.InProgress);
             task6.SetPriority(TaskPriority.Medium);
             task6.TaskType = TaskType.Studies;
 

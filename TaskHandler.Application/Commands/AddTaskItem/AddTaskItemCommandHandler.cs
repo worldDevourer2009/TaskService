@@ -22,14 +22,16 @@ public class AddTaskItemCommandHandler : ICommandHandler<AddTaskItemCommand, Add
     public async Task<AddTaskItemResponse> Handle(AddTaskItemCommand command, CancellationToken cancellationToken)
     {
         var newTask = TaskItem.Create(command.UserId);
-        newTask.Update(newTask);
+        newTask.SetTitle(command.Title);
+        newTask.SetDescription(command.Description);
+        
         var success = await _context.TryAddTaskItem(newTask, cancellationToken);
 
         if (!success)
         {
-            return new AddTaskItemResponse(success, "Task creation failed");
+            return new AddTaskItemResponse(false, "Task creation failed");
         }
         
-        return new AddTaskItemResponse(success, "Task created successfully");
+        return new AddTaskItemResponse(true, "Task created successfully");
     }
 }

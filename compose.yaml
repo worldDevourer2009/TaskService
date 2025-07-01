@@ -1,8 +1,10 @@
-﻿services:
+version: '3.8'
+
+services:
   taskhandler-api:
     image: taskhandler-api
     build:
-      context: .
+      context: 8e
       dockerfile: TaskHandler.Api/Dockerfile
     ports:
       - "5000:80"
@@ -11,7 +13,18 @@
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80;https://+:443
     depends_on:
-      - taskhandler-db
+      taskhandler-db:
+        condition: service_healthy
+      taskhandler-redis:
+        condition: service_healthy
+    entrypoint:
+      - "/wait-for-it.sh"
+      - "taskhandler-redis:6379"
+      - "--"
+      - "dotnet"
+      - "TaskHandler.Api.dll"
+    volumes:
+      - ./wait-for-it.sh:/wait-for-it.sh
     networks:
       - taskhandler-network
 
@@ -27,9 +40,14 @@
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - taskhandler-network
-    
+
   taskhandler-redis:
     image: redis:7-alpine
     container_name: taskhandler-redis
@@ -38,6 +56,11 @@
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
     networks:
       - taskhandler-network
 

@@ -1,6 +1,6 @@
 using TaskHandler.Domain.DomainsEvents.Tasks;
-using TaskHandler.Domain.Enums;
-using TaskStatus = TaskHandler.Domain.Enums.TaskStatus;
+using TaskHandler.Shared.Tasks.Enums;
+using TaskStatus = TaskHandler.Shared.Tasks.Enums.TaskStatus;
 
 namespace TaskHandler.Domain.Entities;
 

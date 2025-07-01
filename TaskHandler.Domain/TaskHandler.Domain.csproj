@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="worldDevourer2009.TaskHandler.Shared" Version="1.0.5" />
   </ItemGroup>
 
 </Project>
