@@ -19,8 +19,11 @@ builder.WebHost.UseKestrel();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(6000, listenOptions => { listenOptions.UseHttps(); });
+    options.ListenAnyIP(6000);
 });
+
+var authUrl = builder.Configuration["AuthSettings:BaseUrl"]
+              ?? throw new InvalidOperationException("AuthSettings:BaseUrl is not set");
 
 var handler = new HttpClientHandler
 {
@@ -29,7 +32,7 @@ var handler = new HttpClientHandler
 
 var httpClient = new HttpClient(handler);
 var rsa = RSA.Create();
-var publicKeyPem = await httpClient.GetStringAsync("https://localhost:9500/.well-known/public-key.pem");
+var publicKeyPem = await httpClient.GetStringAsync($"{authUrl}/.well-known/public-key.pem");
 rsa.ImportFromPem(publicKeyPem);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -140,13 +143,6 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/openapi/v1.json", "TaskHandler API v1"); });
-}
-
-app.UseHttpsRedirection();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHsts();
 }
 
 app.UseExceptionHandler();
