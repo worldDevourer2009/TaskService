@@ -5,6 +5,7 @@ namespace TaskHandler.Application.Interfaces;
 
 public interface IApplicationDbContext
 {
-    DbSet<TaskItem> TaskItems { get; }
+    DbSet<TaskItem> TaskItems { get; set; }
+    DbSet<TaskGroup> TaskGroups { get; set; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -2,7 +2,7 @@ using TaskHandler.Domain.Repositories;
 using TaskHandler.Shared.Tasks.Enums;
 using TaskStatus = TaskHandler.Shared.Tasks.Enums.TaskStatus;
 
-namespace TaskHandler.Application.Commands.UpdateTaskItem;
+namespace TaskHandler.Application.Commands.Tasks;
 
 public record UpdateTaskItemCommand(
     Guid Id,

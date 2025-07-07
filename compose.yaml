@@ -12,6 +12,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80;https://+:443
       - AuthSettings__BaseUrl=http://authservice-api:80
+      - Kafka__BootstrapServers=kafka:9092
     depends_on:
       taskhandler-db:
         condition: service_healthy
@@ -23,6 +24,7 @@ services:
     networks:
       - taskhandler-network
       - authService-network
+      - microservices
 
   taskhandler-db:
     image: postgres:15
@@ -68,4 +70,6 @@ networks:
   taskhandler-network:
     driver: bridge
   authService-network:
-    external: true  
+    external: true 
+  microservices:
+    external: true     

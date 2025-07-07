@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using TaskHandler.Api.Exceptions.Handlers;
 using TaskHandler.Application;
 using TaskHandler.Application.Behaviors;
+using TaskHandler.Application.Commands.Tasks;
 using TaskHandler.Application.Services;
 using TaskHandler.Infrastructure;
 using TaskHandler.Infrastructure.Persistence;
@@ -110,7 +111,7 @@ builder.Services.AddMediatR(config =>
 builder.Services.AddDataProtection();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddValidatorsFromAssemblyContaining<TaskHandler.Application.Commands.AddTaskItem.AddTaskItemCommand>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddTaskItemCommand>();
 
 builder.Services.AddApplication();
 

@@ -1,7 +1,7 @@
 using TaskHandler.Domain.Entities;
 using TaskHandler.Domain.Repositories;
 
-namespace TaskHandler.Application.Commands.AddTaskItem;
+namespace TaskHandler.Application.Commands.Tasks;
 
 public record AddTaskItemCommand(
     Guid UserId,
