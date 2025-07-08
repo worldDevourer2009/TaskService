@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TaskHandler.Application.Commands.AddTaskItem;
-using TaskHandler.Application.Commands.DeleteTaskItem;
-using TaskHandler.Application.Commands.UpdateTaskItem;
 using TaskHandler.Application.Queries.GetTaskItems;
 using System.Security.Claims;
+using TaskHandler.Application.Commands.Tasks;
 using TaskHandler.Shared.Tasks.DTOs.Tasks;
 
 namespace TaskHandler.Api.Controllers.Tasks;

@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using TaskHandler.Application.Interfaces;
 using Serilog;
@@ -7,8 +6,12 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using TaskHandler.Api.Exceptions.Handlers;
+using TaskHandler.Api.Middleware;
+using TaskHandler.Api.Services;
 using TaskHandler.Application;
 using TaskHandler.Application.Behaviors;
+using TaskHandler.Application.Commands.Tasks;
+using TaskHandler.Application.Configurations;
 using TaskHandler.Application.Services;
 using TaskHandler.Infrastructure;
 using TaskHandler.Infrastructure.Persistence;
@@ -17,20 +20,36 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseKestrel();
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(6000, listenOptions => { listenOptions.UseHttps(); });
-});
+// Bind configurations
 
-var handler = new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-};
+builder.Services
+    .AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection("JwtSettings"));
 
-var httpClient = new HttpClient(handler);
-var rsa = RSA.Create();
-var publicKeyPem = await httpClient.GetStringAsync("https://localhost:9500/.well-known/public-key.pem");
-rsa.ImportFromPem(publicKeyPem);
+builder.Services
+    .AddOptions<InternalAuthSettings>()
+    .Bind(builder.Configuration.GetSection("InternalAuthSettings"));
+
+builder.Services
+    .AddOptions<AuthSettings>()
+    .Bind(builder.Configuration.GetSection("AuthSettings"));
+
+builder.Services
+    .AddOptions<KafkaSettings>()
+    .Bind(builder.Configuration.GetSection("Kafka"));
+
+// builder.Services
+//     .AddHttpClient(internalAuth.ServiceClientId!, client =>
+//     {
+//         client.BaseAddress = new Uri(baseUri);
+//         client.Timeout = TimeSpan.FromSeconds(30);
+//         client.DefaultRequestHeaders.Add("Accept", "application/json");
+//     })
+//     .AddHttpMessageHandler<InternalAuthHandler>();
+
+builder.Services.AddHttpClient();
+
+builder.Services.AddSingleton<IPublicKeyService, PublicKeyService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -38,7 +57,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new RsaSecurityKey(rsa),
+            IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+            {
+                var publicKeyService = builder.Services.BuildServiceProvider().GetRequiredService<IPublicKeyService>();
+                return new[]
+                {
+                    publicKeyService.GetPublicKey()
+                };
+            },
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
@@ -46,7 +72,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "test-issuer",
             ValidAudience = builder.Configuration["JwtSettings:Audience"] ?? "test-audience",
         };
-        
+
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -55,6 +81,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 {
                     context.Token = context.Request.Cookies["accessToken"];
                 }
+
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = context =>
@@ -68,6 +95,52 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddJwtBearer("ServiceScheme", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+            {
+                var publicKeyService = builder.Services.BuildServiceProvider().GetRequiredService<IPublicKeyService>();
+                return new[]
+                {
+                    publicKeyService.GetPublicKey()
+                };
+            },
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            ValidIssuer = builder.Configuration["AuthSettings:Issuer"] ?? "test-issuer",
+            ValidAudience = builder.Configuration["AuthSettings:Audience"] ?? "test-audience",
+        };
+        options.Events = new JwtBearerEvents()
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ServiceSchemeAuth");
+
+                var svc = ctx.Principal?.FindFirst("service_name")?.Value ?? "unknown";
+
+                logger.LogError("Authentication failed: {0} from service {svc}", ctx.Exception.Message, svc);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ServiceSchemeAuthValidated");
+
+                var svc = ctx.Principal?.FindFirst("service_name")?.Value ?? "unknown";
+
+                logger.LogInformation("Token validated successfully from service {svc}", svc);
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -77,7 +150,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("https://localhost:5273")
+            policy.WithOrigins("http://localhost:5273")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -107,7 +180,7 @@ builder.Services.AddMediatR(config =>
 builder.Services.AddDataProtection();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddValidatorsFromAssemblyContaining<TaskHandler.Application.Commands.AddTaskItem.AddTaskItemCommand>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddTaskItemCommand>();
 
 builder.Services.AddApplication();
 
@@ -142,15 +215,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/openapi/v1.json", "TaskHandler API v1"); });
 }
 
-app.UseHttpsRedirection();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHsts();
-}
-
 app.UseExceptionHandler();
 app.UseCors("AllowAll");
+
+app.UseMiddleware<PublicKeyMiddleware>();
 
 app.UseSerilogRequestLogging();
 

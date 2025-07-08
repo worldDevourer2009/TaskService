@@ -1,6 +1,6 @@
 using TaskHandler.Domain.Repositories;
 
-namespace TaskHandler.Application.Commands.DeleteTaskItem;
+namespace TaskHandler.Application.Commands.Tasks;
 
 public record DeleteTaskItemCommand(Guid Id) : ICommand<DeleteTaskItemCommandResponse>;
 
